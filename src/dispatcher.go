@@ -3,7 +3,6 @@ package main
 type Dispatcher struct {
 	colaListos      []Process
 	colaBloqueados  []Process
-	CPU             Process
 	maxInstructions int
 }
 
