@@ -1,28 +1,30 @@
 package main
 
-import "fmt"
+import (
+	"time"
+)
 
 func main() {
 	//Por ahora solo son pruebas
 	//../input/process_1.txt
 
 	//crear dispatcher
-	d := Dispatcher{maxInstructions: 10}
+	d := Dispatcher{maxInstructions: 2}
 
 	//crear proceso
-	p := Process{
-		ID:              1,
-		Program_counter: 0,
-		Estado:          "listo",
-	}
+	p := Process{}
 
-	//crear canal
 	ch := make(chan ProcessCreation)
 
-	go p.OrdenProcesos("order", &d, ch)
+	go func() {
+		p.OrdenProcesos("order", &d, ch)
+		close(ch)
+	}()
 
-	for valor := range ch {
-		fmt.Println(valor)
+	for pc := range ch {
+		go p.IniciarProceso(&pc, &d)
 	}
+	d.gestionarProcesos()
+	time.Sleep(3 * time.Second)
 
 }
