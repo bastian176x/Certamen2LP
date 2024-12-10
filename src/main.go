@@ -6,11 +6,11 @@ import (
 )
 
 func main() {
-	//Por ahora solo son pruebas
-	//../input/process_1.txt
+
+	instruccionesMaximas, _ := recibir_parametros()
 
 	//crear dispatcher
-	d := Dispatcher{maxInstructions: 4}
+	d := Dispatcher{maxInstructions: instruccionesMaximas}
 
 	//crear proceso
 	p := Process{}
@@ -33,7 +33,7 @@ func main() {
 		}
 	}
 
-	d.gestionarProcesos(&p)
+	d.gestionarProcesos()
 	time.Sleep(3 * time.Second)
 
 }

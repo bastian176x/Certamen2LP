@@ -22,7 +22,7 @@ func (d *Dispatcher) addProcessBloqueados(p *Process) {
 	d.colaBloqueados = append(d.colaBloqueados, *p)
 }
 
-func (d *Dispatcher) gestionarProcesos(p *Process) {
+func (d *Dispatcher) gestionarProcesos() {
 	for {
 
 		if len(d.colaListos) == 0 && len(d.colaBloqueados) > 0 {
