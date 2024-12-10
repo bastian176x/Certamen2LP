@@ -16,6 +16,7 @@ type Process struct {
 	Estado          string   // listo, bloqueado, ejecutando.
 	Program_counter int      // contador de programa
 	Instrucciones   []string //ayuda a guardar el estado del proceso y reanudarlo con el program counter
+	Tiempo_ES       int      // tiempo de espera antes de ser desbloqueado
 }
 
 // Estructura para la creación de procesos, se lee el archivo order y el tiempo de creación
@@ -38,6 +39,7 @@ func (p *Process) cargarInstrucciones(archivo string) {
 	defer arch.Close()
 
 	reader := bufio.NewReader(arch)
+	re := regexp.MustCompile(`ES\s+\d+`)
 	for {
 		line, err := reader.ReadString('\n')
 		// Si el error es distinto de nil y no es EOF, se imprime y se sale
@@ -56,8 +58,8 @@ func (p *Process) cargarInstrucciones(archivo string) {
 
 			p.Instrucciones = append(p.Instrucciones, "I")
 		}
-		if strings.Contains(line, "ES") {
-			p.Instrucciones = append(p.Instrucciones, "ES")
+		if match := re.FindString(line); match != "" {
+			p.Instrucciones = append(p.Instrucciones, match)
 		}
 		if strings.Contains(line, "F") {
 			p.Instrucciones = append(p.Instrucciones, "F")
@@ -73,7 +75,6 @@ func (p *Process) cargarInstrucciones(archivo string) {
 func (p *Process) ejecutarInstrucciones() string {
 	instruccion := p.Instrucciones[p.Program_counter]
 	p.Program_counter++
-	fmt.Println("Ejecutando instrucción ->", p.Program_counter, instruccion, "Proceso ->", p.Nombre)
 	return instruccion
 }
 
