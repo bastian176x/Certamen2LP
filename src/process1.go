@@ -12,12 +12,13 @@ import (
 )
 
 type Process struct {
-	Nombre          string // nombre del proceso
-	Estado          string // listo, bloqueado, ejecutando.
-	Program_counter int    // contador de programa
-	ESduracion      int    // duracion de la operacion de E/S
+	Nombre          string   // nombre del proceso
+	Estado          string   // listo, bloqueado, ejecutando.
+	Program_counter int      // contador de programa
+	Instrucciones   []string //ayuda a guardar el estado del proceso y reanudarlo con el program counter
 }
 
+// Estructura para la creación de procesos, se lee el archivo order y el tiempo de creación
 type ProcessCreation struct {
 	Procesos []string
 	Tiempo   int
@@ -27,50 +28,56 @@ func (p *Process) finalizarProceso() {
 	p.Estado = "finalizado"
 }
 
-func (p *Process) ejecutarProceso(archivo string, d *Dispatcher) {
+// para leer las instrucciones de un proceso usando el archivo process_n.txt
+func (p *Process) cargarInstrucciones(archivo string) {
 	arch, err := os.Open(fmt.Sprintf("../input/%s.txt", archivo))
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	defer arch.Close()
 
 	reader := bufio.NewReader(arch)
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil {
-
-			if err == io.EOF {
-				break
-			}
-
+		// Si el error es distinto de nil y no es EOF, se imprime y se sale
+		if err != nil && err != io.EOF {
 			fmt.Println(err)
 			break
 		}
-		/*
-			if p.Program_counter < d.maxInstructions {
-				d.addProcessListos(*p)
-			}*/
+
 		if strings.Contains(line, "#") {
+			if err == io.EOF {
+				break
+			}
 			continue
 		}
 		if strings.Contains(line, "I") {
-			fmt.Println("Instrucción ->", archivo)
-			p.Program_counter++
+
+			p.Instrucciones = append(p.Instrucciones, "I")
 		}
 		if strings.Contains(line, "ES") {
-			fmt.Println("E/S ->", archivo)
-			p.Program_counter++
-			d.addProcessBloqueados(*p)
+			p.Instrucciones = append(p.Instrucciones, "ES")
 		}
 		if strings.Contains(line, "F") {
-			fmt.Println("Fin ->", archivo)
+			p.Instrucciones = append(p.Instrucciones, "F")
 			break
 		}
-
+		//Si el error es EOF y no se encontró 'F', se termina el bucle
+		if err == io.EOF {
+			break
+		}
 	}
 }
 
-func (p *Process) OrdenProcesos(archivo string, d *Dispatcher, canal_procesos chan ProcessCreation) {
+func (p *Process) ejecutarInstrucciones() string {
+	instruccion := p.Instrucciones[p.Program_counter]
+	p.Program_counter++
+	fmt.Println("Ejecutando instrucción ->", p.Program_counter, instruccion, "Proceso ->", p.Nombre)
+	return instruccion
+}
+
+func (p *Process) OrdenProcesos(archivo string, canal_procesos chan ProcessCreation) {
 	re := regexp.MustCompile(`\d+`)
 	re2 := regexp.MustCompile(`process_\d+`)
 
@@ -105,17 +112,16 @@ func (p *Process) OrdenProcesos(archivo string, d *Dispatcher, canal_procesos ch
 	}
 }
 
-func (p *Process) IniciarProceso(pc *ProcessCreation, d *Dispatcher) {
+func (p *Process) IniciarProceso(pc *ProcessCreation) []Process {
 	time.Sleep(time.Duration(pc.Tiempo) * time.Millisecond)
-	fmt.Println("Iniciando proceso", pc.Procesos, "en", pc.Tiempo, "milisegundos")
-
+	var nuevosProcesos []Process
 	for _, nombreProceso := range pc.Procesos {
 		nuevoProceso := Process{
 			Nombre:          nombreProceso,
-			Estado:          "listo",
+			Estado:          "Listo",
 			Program_counter: 0,
 		}
-		fmt.Println("PUSH LISTO ->", nuevoProceso.Nombre)
-		d.addProcessListos(nuevoProceso)
+		nuevosProcesos = append(nuevosProcesos, nuevoProceso)
 	}
+	return nuevosProcesos
 }
