@@ -24,7 +24,11 @@ func (d *Dispatcher) addProcessBloqueados(p *Process) {
 
 func (d *Dispatcher) gestionarProcesos(p *Process) {
 	for {
-		if len(d.colaListos) == 0 {
+
+		if len(d.colaListos) == 0 && len(d.colaBloqueados) > 0 {
+			d.descontarTiempoBloqueados()
+			continue
+		} else if len(d.colaListos) == 0 && len(d.colaBloqueados) == 0 {
 			break
 		}
 		proceso := d.colaListos[0]
@@ -35,9 +39,11 @@ func (d *Dispatcher) gestionarProcesos(p *Process) {
 		d.descontarTiempoBloqueados()
 		fmt.Println("LOAD ->", proceso.Nombre)
 		d.descontarTiempoBloqueados()
+		fmt.Println("EXECUTE ->", proceso.Nombre)
+		d.descontarTiempoBloqueados()
 		for {
 			instruccion := proceso.ejecutarInstrucciones()
-			fmt.Println("EXEC ->", proceso.Nombre, instruccion, "Numero de instruccion ->", proceso.Program_counter)
+			fmt.Println(proceso.Nombre, instruccion, "Numero de instruccion ->", proceso.Program_counter)
 			d.descontarTiempoBloqueados()
 			if instruccion == "F" {
 				fmt.Println("Proceso finalizado ->", proceso.Nombre)
@@ -97,18 +103,16 @@ func (d *Dispatcher) descontarTiempoBloqueados() {
 	}
 
 	//descontar el tiempo de todos los bloqueados
-	if d.estaBloqueado(&d.colaListos[0]) {
-		for i := 0; i < len(d.colaBloqueados); i++ {
-			d.colaBloqueados[i].Tiempo_ES--
-			if d.colaBloqueados[i].Tiempo_ES <= 0 {
-				d.colaBloqueados[i].Estado = "Listo"
-				d.PushProcessListos(&d.colaBloqueados[i])
-				d.colaBloqueados = append(d.colaBloqueados[:i], d.colaBloqueados[i+1:]...)
-				i--
-			}
+
+	for i := 0; i < len(d.colaBloqueados); i++ {
+		d.colaBloqueados[i].Tiempo_ES--
+		if d.colaBloqueados[i].Tiempo_ES <= 0 {
+			fmt.Println("DESBLOQUEADO")
+			d.colaBloqueados[i].Estado = "Listo"
+			d.PushProcessListos(&d.colaBloqueados[i])
+			d.colaBloqueados = append(d.colaBloqueados[:i], d.colaBloqueados[i+1:]...)
+			i--
 		}
-	} else {
-		return
 	}
 
 }

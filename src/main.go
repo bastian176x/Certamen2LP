@@ -10,7 +10,7 @@ func main() {
 	//../input/process_1.txt
 
 	//crear dispatcher
-	d := Dispatcher{maxInstructions: 2}
+	d := Dispatcher{maxInstructions: 4}
 
 	//crear proceso
 	p := Process{}
