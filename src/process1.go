@@ -14,30 +14,27 @@ import (
 
 type Process struct {
 	Nombre          string   // nombre del proceso
-	Estado          string   // listo, bloqueado, ejecutando.
+	Estado          string   // listo, bloqueado, ejecutando
 	Program_counter int      // contador de programa
-	Instrucciones   []string //ayuda a guardar el estado del proceso y reanudarlo con el program counter
+	Instrucciones   []string // estado del proceso (instrucciones)
 	Tiempo_ES       int      // tiempo de espera antes de ser desbloqueado
 }
 
-// Estructura para la creación de procesos, se lee el archivo order y el tiempo de creación
+// Estructura para la creación de procesos
 type ProcessCreation struct {
 	Procesos []string
 	Tiempo   int
 }
 
 // arrancar el proceso
-// cmdns: canal de comandos que envia el dispatcher
-// statusCanal: canal de estado que envia el proceso al dispatcher, el dispatcher hará el manejo del proceso según el estado
 func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, probabilidadCierre int) {
 
 	for {
 		comandos, ok := <-cmdns
 		if !ok {
-			//si el canal se cerró desde el dispatcher, el proceso termina
+			// Si el canal se cerró desde el dispatcher, el proceso termina
 			return
 		}
-		//si el dispatcher da la orden de ejecutar, el proceso ejecuta la siguiente instrucción
 		if comandos == "EXECUTE" {
 			instruccion := p.ejecutarInstrucciones()
 			if rand.Intn(probabilidadCierre) == 0 {
@@ -61,13 +58,11 @@ func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, proba
 			} else {
 				statusCanal <- "EXECUTING"
 			}
-
 		}
-
 	}
 }
 
-// para leer las instrucciones de un proceso usando el archivo process_n.txt
+// Carga las instrucciones de un proceso desde su archivo
 func (p *Process) cargarInstrucciones(archivo string) {
 	arch, err := os.Open(fmt.Sprintf("../input/%s.txt", archivo))
 	if err != nil {
@@ -80,7 +75,6 @@ func (p *Process) cargarInstrucciones(archivo string) {
 	re := regexp.MustCompile(`ES\s+\d+`)
 	for {
 		line, err := reader.ReadString('\n')
-		// Si el error es distinto de nil y no es EOF, se imprime y se sale
 		if err != nil && err != io.EOF {
 			fmt.Println(err)
 			break
@@ -93,7 +87,6 @@ func (p *Process) cargarInstrucciones(archivo string) {
 			continue
 		}
 		if strings.Contains(line, "I") {
-
 			p.Instrucciones = append(p.Instrucciones, "I")
 		}
 		if match := re.FindString(line); match != "" {
@@ -103,11 +96,17 @@ func (p *Process) cargarInstrucciones(archivo string) {
 			p.Instrucciones = append(p.Instrucciones, "F")
 			break
 		}
-		//Si el error es EOF y no se encontró 'F', se termina el bucle
 		if err == io.EOF {
 			break
 		}
 	}
+}
+
+func (p *Process) RestaurarEstado(estado *BCP) {
+	p.Program_counter = estado.Program_counter
+	p.Estado = estado.Estado
+	p.Tiempo_ES = estado.Tiempo_ES
+	p.Instrucciones = estado.Instrucciones
 }
 
 func (p *Process) ejecutarInstrucciones() string {
@@ -132,6 +131,13 @@ func (p *Process) OrdenProcesos(archivo string, canal_procesos chan ProcessCreat
 
 		match := re.FindString(line)
 		if match == "" {
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
 			continue
 		}
 
@@ -147,7 +153,6 @@ func (p *Process) OrdenProcesos(archivo string, canal_procesos chan ProcessCreat
 			fmt.Println(err)
 			break
 		}
-
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 var out io.Writer // Variable global para escribir la traza
 
 func main() {
-
 	// Abrir el archivo de traza
 	f, err := os.Create("../output/trace.txt")
 	if err != nil {
@@ -24,19 +23,21 @@ func main() {
 
 	instruccionesMaximas, _ := recibir_parametros()
 
-	//crear dispatcher
+	// Crear dispatcher
 	d := Dispatcher{maxInstructions: instruccionesMaximas}
 
-	//crear proceso
+	// Crear proceso "p" para leer las ordenes de creación
 	p := Process{}
 
 	ch := make(chan ProcessCreation)
 
+	// Leer las ordenes de creación
 	go func() {
 		p.OrdenProcesos("order", ch)
 		close(ch)
 	}()
 
+	// Crear procesos a partir de las ordenes
 	for pc := range ch {
 		go p.IniciarProceso(&pc)
 		nuevosProcesos := p.IniciarProceso(&pc)
@@ -48,6 +49,7 @@ func main() {
 		}
 	}
 
+	// Iniciar la gestión de procesos por el Dispatcher
 	d.gestionarProcesos()
 	time.Sleep(3 * time.Second)
 }

@@ -4,92 +4,96 @@ PUSH LISTO -> process_2 CREADO EN -> 1 ms
 INSTRUCCIONES -> [I I ES 7 I I F]
 PUSH LISTO -> process_3 CREADO EN -> 67 ms
 INSTRUCCIONES -> [I I ES 7 I ES 2 I I I F]
-PULL Dispatcher
+PULL -> process_1
 LOADING -> process_1
 EXECUTE -> process_1
 process_1 I Numero de instruccion -> 1
 process_1 I Numero de instruccion -> 2
+STORE -> process_1
 CAMBIO DE CONTEXTO -> process_1
-STORING -> process_1
-PUSH LISTO-> process_1
-PULL Dispatcher
+PUSH LISTO -> process_1
+PULL -> process_2
 LOADING -> process_2
 EXECUTE -> process_2
 process_2 I Numero de instruccion -> 1
 process_2 I Numero de instruccion -> 2
+STORE -> process_2
 CAMBIO DE CONTEXTO -> process_2
-STORING -> process_2
-PUSH LISTO-> process_2
-PULL Dispatcher
+PUSH LISTO -> process_2
+PULL -> process_3
 LOADING -> process_3
 EXECUTE -> process_3
 process_3 I Numero de instruccion -> 1
 process_3 I Numero de instruccion -> 2
+STORE -> process_3
 CAMBIO DE CONTEXTO -> process_3
-STORING -> process_3
-PUSH LISTO-> process_3
-PULL Dispatcher
+PUSH LISTO -> process_3
+PULL -> process_1
 LOADING -> process_1
 EXECUTE -> process_1
 process_1 ES 7 Numero de instruccion -> 3
-STORING -> process_1
+STORE -> process_1
+PROCESO BLOQUEADO -> process_1
 PUSH BLOQUEADO -> process_1
-PULL Dispatcher
+PULL -> process_2
 LOADING -> process_2
 EXECUTE -> process_2
 process_2 ES 7 Numero de instruccion -> 3
-STORING -> process_2
+STORE -> process_2
+PROCESO BLOQUEADO -> process_2
 PUSH BLOQUEADO -> process_2
-PULL Dispatcher
-DESBLOQUEADO -> process_1
+PULL -> process_3
 LOADING -> process_3
 EXECUTE -> process_3
 process_3 ES 7 Numero de instruccion -> 3
-STORING -> process_3
+STORE -> process_3
+PROCESO BLOQUEADO -> process_3
 PUSH BLOQUEADO -> process_3
-PULL Dispatcher
-DESBLOQUEADO -> process_2
+DESBLOQUEADO -> process_1
+PULL -> process_1
 LOADING -> process_1
 EXECUTE -> process_1
+DESBLOQUEADO -> process_2
 process_1 I Numero de instruccion -> 4
+STORE -> process_1
 CAMBIO DE CONTEXTO -> process_1
-STORING -> process_1
-PUSH LISTO-> process_1
-DESBLOQUEADO -> process_3
-PULL Dispatcher
+PUSH LISTO -> process_1
+PULL -> process_2
 LOADING -> process_2
 EXECUTE -> process_2
+DESBLOQUEADO -> process_3
 process_2 I Numero de instruccion -> 4
+STORE -> process_2
 CAMBIO DE CONTEXTO -> process_2
-STORING -> process_2
-PUSH LISTO-> process_2
-PULL Dispatcher
+PUSH LISTO -> process_2
+PULL -> process_3
 LOADING -> process_3
 EXECUTE -> process_3
 process_3 I Numero de instruccion -> 4
+STORE -> process_3
 CAMBIO DE CONTEXTO -> process_3
-STORING -> process_3
-PUSH LISTO-> process_3
-PULL Dispatcher
+PUSH LISTO -> process_3
+PULL -> process_1
 LOADING -> process_1
 EXECUTE -> process_1
 process_1 I Numero de instruccion -> 5
 process_1 F Numero de instruccion -> 6
 FINISHED -> process_1
-PULL Dispatcher
+PULL -> process_2
 LOADING -> process_2
 EXECUTE -> process_2
 process_2 I Numero de instruccion -> 5
 process_2 F Numero de instruccion -> 6
 FINISHED -> process_2
-PULL Dispatcher
+PULL -> process_3
 LOADING -> process_3
 EXECUTE -> process_3
 process_3 ES 2 Numero de instruccion -> 5
-STORING -> process_3
+STORE -> process_3
+PROCESO BLOQUEADO -> process_3
 PUSH BLOQUEADO -> process_3
 DESBLOQUEADO -> process_3
-PULL Dispatcher
+PULL -> process_3
 LOADING -> process_3
 EXECUTE -> process_3
 process_3 I Numero de instruccion -> 6
