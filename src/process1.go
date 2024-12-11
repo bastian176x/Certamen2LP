@@ -25,8 +25,42 @@ type ProcessCreation struct {
 	Tiempo   int
 }
 
-func (p *Process) finalizarProceso() {
-	p.Estado = "finalizado"
+// arrancar el proceso
+func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string) {
+
+	for {
+		comandos, ok := <-cmdns
+		if !ok {
+			//si el canal se cerró desde el dispatcher, el proceso termina
+			return
+		}
+
+		if comandos == "EXECUTE" {
+			instruccion := p.ejecutarInstrucciones()
+			fmt.Println(p.Nombre, instruccion, "Numero de instruccion ->", p.Program_counter)
+			if p.Program_counter == len(p.Instrucciones) {
+				statusCanal <- "FINISHED"
+				continue
+			}
+			if instruccion == "F" {
+				statusCanal <- "FINISHED"
+				return
+			}
+
+			re := regexp.MustCompile(`ES\s+(\d+)`)
+			match := re.FindStringSubmatch(instruccion)
+
+			if match != nil {
+				n, _ := strconv.Atoi(match[1])
+				statusCanal <- "BLOCKED:" + strconv.Itoa(n)
+				return
+			} else {
+				statusCanal <- "EXECUTING"
+			}
+
+		}
+
+	}
 }
 
 // para leer las instrucciones de un proceso usando el archivo process_n.txt
