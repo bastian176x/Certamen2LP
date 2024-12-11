@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -26,7 +27,9 @@ type ProcessCreation struct {
 }
 
 // arrancar el proceso
-func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string) {
+// cmdns: canal de comandos que envia el dispatcher
+// statusCanal: canal de estado que envia el proceso al dispatcher, el dispatcher hará el manejo del proceso según el estado
+func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, probabilidadCierre int) {
 
 	for {
 		comandos, ok := <-cmdns
@@ -34,15 +37,16 @@ func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string) {
 			//si el canal se cerró desde el dispatcher, el proceso termina
 			return
 		}
-
+		//si el dispatcher da la orden de ejecutar, el proceso ejecuta la siguiente instrucción
 		if comandos == "EXECUTE" {
 			instruccion := p.ejecutarInstrucciones()
-			fmt.Println(p.Nombre, instruccion, "Numero de instruccion ->", p.Program_counter)
-			if p.Program_counter == len(p.Instrucciones) {
+			if rand.Intn(probabilidadCierre) == 0 {
+				fmt.Fprintln(out, p.Nombre, "Cerrado por causa desconocida")
 				statusCanal <- "FINISHED"
-				continue
+				return
 			}
-			if instruccion == "F" {
+			fmt.Fprintln(out, p.Nombre, instruccion, "Numero de instruccion ->", p.Program_counter)
+			if p.Program_counter == len(p.Instrucciones) || instruccion == "F" {
 				statusCanal <- "FINISHED"
 				return
 			}

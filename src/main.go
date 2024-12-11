@@ -2,10 +2,25 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"time"
 )
 
+var out io.Writer // Variable global para escribir la traza
+
 func main() {
+
+	// Abrir el archivo de traza
+	f, err := os.Create("../output/trace.txt")
+	if err != nil {
+		fmt.Println("Error al crear archivo de traza:", err)
+		return
+	}
+	defer f.Close()
+
+	// Crear un MultiWriter para escribir a consola y al archivo
+	out = io.MultiWriter(os.Stdout, f)
 
 	instruccionesMaximas, _ := recibir_parametros()
 
@@ -26,14 +41,13 @@ func main() {
 		go p.IniciarProceso(&pc)
 		nuevosProcesos := p.IniciarProceso(&pc)
 		for i := range nuevosProcesos {
-			fmt.Println("PUSH LISTO ->", nuevosProcesos[i].Nombre, "CREADO EN ->", pc.Tiempo, "ms")
+			fmt.Fprintln(out, "PUSH LISTO ->", nuevosProcesos[i].Nombre, "CREADO EN ->", pc.Tiempo, "ms")
 			nuevosProcesos[i].cargarInstrucciones(nuevosProcesos[i].Nombre)
-			fmt.Println("INSTRUCCIONES ->", nuevosProcesos[i].Instrucciones)
+			fmt.Fprintln(out, "INSTRUCCIONES ->", nuevosProcesos[i].Instrucciones)
 			d.PushProcessListos(&nuevosProcesos[i])
 		}
 	}
 
 	d.gestionarProcesos()
 	time.Sleep(3 * time.Second)
-
 }
