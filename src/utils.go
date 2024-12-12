@@ -6,22 +6,21 @@ import (
 	"strconv"
 )
 
-func recibir_parametros() (int, int) {
+// recibirParametrosMejorado: valida y devuelve los parámetros
+func recibirParametros() (int, int, string, string, error) {
 	args := os.Args
-	if len(args) < 3 {
-		fmt.Println("Faltan argumentos")
-		return 0, 0
+	if len(args) < 5 {
+		return 0, 0, "", "", fmt.Errorf("faltan argumentos. Uso: <ejecutable> <instruccionesMaximas> <probCierre> <archivoOrden> <archivoSalida>")
 	}
-
 	instruccionesMaximas, err := strconv.Atoi(args[1])
 	if err != nil {
-		fmt.Println("Error al convertir el argumento 1")
-		return 0, 0
+		return 0, 0, "", "", fmt.Errorf("error al convertir el argumento 1 a entero: %v", err)
 	}
 	probabilidadCierre, err := strconv.Atoi(args[2])
 	if err != nil {
-		fmt.Println("Error al convertir el argumento 2")
-		return 0, 0
+		return 0, 0, "", "", fmt.Errorf("error al convertir el argumento 2 a entero: %v", err)
 	}
-	return instruccionesMaximas, probabilidadCierre
+	archivoOrden := args[3]
+	archivoSalida := args[4]
+	return instruccionesMaximas, probabilidadCierre, archivoOrden, archivoSalida, nil
 }

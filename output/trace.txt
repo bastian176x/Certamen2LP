@@ -1,7 +1,12 @@
+DEBUG: Línea ignorada: # Tiempo Creación (se agregan a Cola Listo)	Nombre de archivo del Proceso(s)
+DEBUG: Procesos encontrados en línea: [process_1 process_2]
+DEBUG: Procesos encontrados en línea: [process_3]
 PUSH LISTO -> process_1 CREADO EN -> 1 ms
 INSTRUCCIONES -> [I I ES 7 I I F]
 PUSH LISTO -> process_2 CREADO EN -> 1 ms
 INSTRUCCIONES -> [I I ES 7 I I F]
+DEBUG: Línea ignorada: 
+DEBUG: Línea ignorada: 
 PUSH LISTO -> process_3 CREADO EN -> 67 ms
 INSTRUCCIONES -> [I I ES 7 I ES 2 I I I F]
 PULL -> process_1
@@ -101,3 +106,4 @@ process_3 I Numero de instruccion -> 7
 process_3 I Numero de instruccion -> 8
 process_3 F Numero de instruccion -> 9
 FINISHED -> process_3
+Todos los procesos terminaron.

@@ -13,44 +13,40 @@ import (
 )
 
 type Process struct {
-	Nombre          string   // nombre del proceso
-	Estado          string   // listo, bloqueado, ejecutando
-	Program_counter int      // contador de programa
-	Instrucciones   []string // estado del proceso (instrucciones)
-	Tiempo_ES       int      // tiempo de espera antes de ser desbloqueado
+	Nombre        string
+	Instrucciones []string
 }
 
-// Estructura para la creación de procesos
 type ProcessCreation struct {
 	Procesos []string
 	Tiempo   int
 }
 
-// arrancar el proceso
-func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, probabilidadCierre int) {
+// arrancar el proceso con su BCP
+func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, probabilidadCierre int, bcp *BCP, logger io.Writer) {
+	rand.Seed(time.Now().UnixNano())
+	reES := regexp.MustCompile(`ES\s+(\d+)`)
 
 	for {
-		comandos, ok := <-cmdns
+		comando, ok := <-cmdns
 		if !ok {
-			// Si el canal se cerró desde el dispatcher, el proceso termina
+			// Canal cerrado desde dispatcher
 			return
 		}
-		if comandos == "EXECUTE" {
-			instruccion := p.ejecutarInstrucciones()
-			if rand.Intn(probabilidadCierre) == 0 {
-				fmt.Fprintln(out, p.Nombre, "Cerrado por causa desconocida")
+		if comando == "EXECUTE" {
+			instruccion := p.ejecutarInstrucciones(bcp)
+			if probabilidadCierre > 0 && rand.Intn(probabilidadCierre) == 0 {
+				fmt.Fprintln(logger, p.Nombre, "Cerrado por causa desconocida")
 				statusCanal <- "FINISHED"
 				return
 			}
-			fmt.Fprintln(out, p.Nombre, instruccion, "Numero de instruccion ->", p.Program_counter)
-			if p.Program_counter == len(p.Instrucciones) || instruccion == "F" {
+			fmt.Fprintln(logger, p.Nombre, instruccion, "Numero de instruccion ->", bcp.Program_counter)
+			if bcp.Program_counter == len(p.Instrucciones) || instruccion == "F" {
 				statusCanal <- "FINISHED"
 				return
 			}
 
-			re := regexp.MustCompile(`ES\s+(\d+)`)
-			match := re.FindStringSubmatch(instruccion)
-
+			match := reES.FindStringSubmatch(instruccion)
 			if match != nil {
 				n, _ := strconv.Atoi(match[1])
 				statusCanal <- "BLOCKED:" + strconv.Itoa(n)
@@ -62,108 +58,137 @@ func (p *Process) arrancar(cmdns <-chan string, statusCanal chan<- string, proba
 	}
 }
 
-// Carga las instrucciones de un proceso desde su archivo
-func (p *Process) cargarInstrucciones(archivo string) {
-	arch, err := os.Open(fmt.Sprintf("../input/%s.txt", archivo))
+// cargarInstrucciones carga las instrucciones de un archivo asociado al proceso
+func (p *Process) cargarInstrucciones(logger io.Writer) error {
+	filePath := fmt.Sprintf("input/%s.txt", p.Nombre)
+	f, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return fmt.Errorf("error abriendo archivo de instrucciones %s: %v", p.Nombre, err)
 	}
-	defer arch.Close()
+	defer f.Close()
 
-	reader := bufio.NewReader(arch)
-	re := regexp.MustCompile(`ES\s+\d+`)
+	reader := bufio.NewReader(f)
+	reES := regexp.MustCompile(`ES\s+\d+`)
+
 	for {
 		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			fmt.Println(err)
+		// Si llega EOF y line no está vacía, aún así debemos procesarla
+		if err == io.EOF {
+			if len(line) > 0 {
+				line = strings.TrimSpace(line)
+				if strings.Contains(line, "#") {
+					// Es una línea de comentario, no hacemos nada
+				} else {
+					// Procesamos la línea como si fuera una línea normal
+					if strings.Contains(line, "I") {
+						p.Instrucciones = append(p.Instrucciones, "I")
+					}
+					if match := reES.FindString(line); match != "" {
+						p.Instrucciones = append(p.Instrucciones, match)
+					}
+					if strings.Contains(line, "F") {
+						p.Instrucciones = append(p.Instrucciones, "F")
+					}
+				}
+			}
+			// Salimos del for una vez procesada la última línea
 			break
 		}
+		if err != nil {
+			return fmt.Errorf("error leyendo instrucciones de %s: %v", p.Nombre, err)
+		}
 
+		line = strings.TrimSpace(line)
+		// Ignorar comentarios
 		if strings.Contains(line, "#") {
-			if err == io.EOF {
-				break
-			}
 			continue
 		}
+
 		if strings.Contains(line, "I") {
 			p.Instrucciones = append(p.Instrucciones, "I")
 		}
-		if match := re.FindString(line); match != "" {
+		if match := reES.FindString(line); match != "" {
 			p.Instrucciones = append(p.Instrucciones, match)
 		}
 		if strings.Contains(line, "F") {
 			p.Instrucciones = append(p.Instrucciones, "F")
-			break
-		}
-		if err == io.EOF {
+			// Si encontramos F, el proceso termina aquí
 			break
 		}
 	}
+
+	return nil
 }
 
-func (p *Process) RestaurarEstado(estado *BCP) {
-	p.Program_counter = estado.Program_counter
-	p.Estado = estado.Estado
-	p.Tiempo_ES = estado.Tiempo_ES
-	p.Instrucciones = estado.Instrucciones
+// Ejecutar la siguiente instrucción usando el Program_counter del BCP
+func (p *Process) ejecutarInstrucciones(bcp *BCP) string {
+	if bcp.Program_counter < len(p.Instrucciones) {
+		instruccion := p.Instrucciones[bcp.Program_counter]
+		bcp.Program_counter++
+		return instruccion
+	}
+	return "F"
 }
 
-func (p *Process) ejecutarInstrucciones() string {
-	instruccion := p.Instrucciones[p.Program_counter]
-	p.Program_counter++
-	return instruccion
-}
-
-func (p *Process) OrdenProcesos(archivo string, canal_procesos chan ProcessCreation) {
-	re := regexp.MustCompile(`\d+`)
-	re2 := regexp.MustCompile(`process_\d+`)
-
-	orden, err := os.Open(fmt.Sprintf("../input/%s.txt", archivo))
+// OrdenProcesos lee las órdenes de creación de procesos
+func (p *Process) OrdenProcesos(archivo string, canal_procesos chan ProcessCreation, logger io.Writer) error {
+	filePath := fmt.Sprintf("input/%s.txt", archivo)
+	f, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println(err)
+		return fmt.Errorf("error abriendo archivo de órdenes %s: %v", archivo, err)
 	}
-	defer orden.Close()
+	defer f.Close()
 
-	reader := bufio.NewReader(orden)
+	reader := bufio.NewReader(f)
+	re := regexp.MustCompile(`^\d+`)         // Coincidir solo números al inicio de línea
+	re2 := regexp.MustCompile(`process_\d+`) // Coincidir con nombres de procesos
+
 	for {
 		line, err := reader.ReadString('\n')
-
-		match := re.FindString(line)
-		if match == "" {
+		line = strings.TrimSpace(line) // Eliminar espacios extra
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			fmt.Fprintln(logger, "DEBUG: Línea ignorada:", line)
 			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				fmt.Println(err)
 				break
 			}
 			continue
 		}
 
-		num, _ := strconv.Atoi(match)
-		procesos_nombres := re2.FindAllString(line, -1)
+		// Buscar el tiempo (número al inicio)
+		matchNum := re.FindString(line)
+		if matchNum == "" {
+			fmt.Fprintln(logger, "DEBUG: Línea sin tiempo válido:", line)
+			continue
+		}
+		num, _ := strconv.Atoi(matchNum)
 
-		canal_procesos <- ProcessCreation{Procesos: procesos_nombres, Tiempo: num}
+		// Buscar nombres de procesos
+		procesosNombres := re2.FindAllString(line, -1)
+		if len(procesosNombres) > 0 {
+			fmt.Fprintln(logger, "DEBUG: Procesos encontrados en línea:", procesosNombres)
+			canal_procesos <- ProcessCreation{Procesos: procesosNombres, Tiempo: num}
+		} else {
+			fmt.Fprintln(logger, "DEBUG: Sin procesos válidos en línea:", line)
+		}
 
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			fmt.Println(err)
-			break
+			return fmt.Errorf("error leyendo líneas de %s: %v", archivo, err)
 		}
 	}
+
+	return nil
 }
 
+// IniciarProceso simula el inicio de procesos tras el tiempo indicado
 func (p *Process) IniciarProceso(pc *ProcessCreation) []Process {
 	time.Sleep(time.Duration(pc.Tiempo) * time.Millisecond)
 	var nuevosProcesos []Process
 	for _, nombreProceso := range pc.Procesos {
 		nuevoProceso := Process{
-			Nombre:          nombreProceso,
-			Estado:          "Listo",
-			Program_counter: 0,
+			Nombre: nombreProceso,
 		}
 		nuevosProcesos = append(nuevosProcesos, nuevoProceso)
 	}
